@@ -8,15 +8,19 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
+	"log"
+
 	"github.com/joho/godotenv"
 )
+
+var Db *gorm.DB
 
 func loadEnvVars() {
 	err := godotenv.Load()
 
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "Error loading .env file")
-	// }
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading .env file")
+	}
 }
 
 func init() {
@@ -28,6 +32,8 @@ func init() {
 	dbName := os.Getenv("DB_DATABASE")
 	dbUsername := os.Getenv("DB_USERNAME")
 	dbPassword := os.Getenv("DB_PASSWORD")
+
+	fmt.Sprint(dbConnection)
 
 	if dbConnection == "mysql" {
 		// dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True"
@@ -42,4 +48,10 @@ func init() {
 			DSN: dsn,
 		}), &gorm.Config{})
 	}
+
+	if err != nil {
+		log.Panic(err)
+	}
+
+	Db = db
 }
