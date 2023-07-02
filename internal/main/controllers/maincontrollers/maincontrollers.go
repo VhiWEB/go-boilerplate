@@ -8,6 +8,6 @@ import (
 	_ "main/internal/auth"
 )
 
-func getServiceDetail(c *gin.Context) {
+func GetServiceDetail(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html; charset=utf-8", []byte("<html>Go Boilerplate</html>"))
 }

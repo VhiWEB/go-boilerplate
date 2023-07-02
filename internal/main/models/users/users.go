@@ -3,79 +3,66 @@ package users
 import (
 	"log"
 	"main/internal/pkg/database"
-
 	"main/pkg/hash"
-
-	"gorm.io/gorm"
+	"time"
 )
 
 var db = database.Db
 
 type User struct {
-	gorm.Model
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
+	ID        uint      `gorm:"primarykey" json:"id"`
+	Email     string    `json:"email"`
+	Password  string    `json:"password"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func (user *User) create() {
-	hashedPassword, err := hash.hashString(user.Password)
+func Get() []User {
+	var users []User
+	db.Find(&users)
 
-	tx := database.Db.Exec("INSERT INTO Users(Email,Password) VALUES(?,?)", user.Email, hashedPassword)
+	return users
+}
+
+func (user *User) Create() {
+	hashedPassword, err := hash.HashString(user.Password)
+
+	if err == nil {
+		log.Fatal(err)
+	}
+
+	tx := db.Exec("INSERT INTO Users(Email,Password) VALUES(?,?)", user.Email, hashedPassword)
 
 	if tx == nil {
 		log.Fatal(tx)
 	}
 }
 
-func (user *User) authenticate() bool {
-	tx := database.Db.Exec("SELECT password FROM users WHERE email = ?", user.Email)
+func (user *User) Authenticate() bool {
+	tx := db.Raw("SELECT password FROM users WHERE email = ?", user.Email)
 
 	if tx == nil {
 		log.Fatal(tx)
 	}
 
 	var hashedPassword string
-	err = tx.Scan(&hashedPassword)
+	tx.Scan(&hashedPassword)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return hash.checkStringHash(user.Password, hashedPassword)
+	return hash.CheckStringHash(user.Password, hashedPassword)
 }
 
-// getUserIdByEmail check if a user exists in database by given email
-func getUserIdByEmail(email string) (uint, error) {
-	statement := database.Db.Raw("SELECT id FROM users WHERE email = ?")
-	// if  != nil {
-	// 	log.Fatal(err)
-	// }
+// Check if a user exists in database by given email
+func GetUserByEmail(email string) (User, error) {
+	tx := db.Raw("SELECT * FROM users WHERE email = ?", email)
 
-	var userId uint
-	err = sr.Scan(&userId)
-
-	if err != nil {
-		return 0, err
+	if tx == nil {
+		log.Fatal(tx)
 	}
 
-	return userId, nil
-}
+	var user User
+	tx.Scan(&user)
+	user.Email = email
 
-// GetUserByID check if a user exists in database and return the user object.
-func getEmailById(userId uint) (User, error) {
-	statement := database.Db.Raw("SELECT email FROM users WHERE id = ?", userId)
-
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	var email string
-	err = row.Scan(&email)
-
-	if err != nil {
-		return User{}, err
-	}
-
-	return User{ID: userId, Email: email}, nil
+	return user, nil
 }

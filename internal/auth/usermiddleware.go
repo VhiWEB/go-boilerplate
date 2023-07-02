@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -20,27 +21,25 @@ func UserAuthMiddleware() gin.HandlerFunc {
 		header := c.Request.Header.Get("Authorization")
 
 		// Allow unauthenticated users in
-		if header == "" {
-			c.Next()
-			return
-		}
+		// if header == "" {
+		// 	c.Next()
+		// 	return
+		// }
 
 		// Validate jwt token
-		tokenStr := header
-		email, err := jwt.ParseToken(tokenStr)
+		tokenStr := strings.Split(header, "Bearer ")
+		email, err := jwt.ParseToken(tokenStr[1])
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
 			return
 		}
 
-		// check if user exists in db
-		user := users.User{Email: email}
-		id, err := users.GetUserIdByEmail(email)
+		// Check if user exists in db
+		user, err := users.GetUserByEmail(email)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
 			return
 		}
-		user.ID = id
 		c.Set("user", user)
 
 		c.Next()

@@ -33,25 +33,35 @@ func init() {
 	dbUsername := os.Getenv("DB_USERNAME")
 	dbPassword := os.Getenv("DB_PASSWORD")
 
-	fmt.Sprint(dbConnection)
-
 	if dbConnection == "mysql" {
 		// dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True"
 		dsn := fmt.Sprint(dbUsername, ":", dbPassword, "@tcp(", dbHost, ":", dbPort, ")/", dbName, "?charset=utf8mb4&parseTime=True")
 		db, err := gorm.Open(mysql.New(mysql.Config{
 			DSN: dsn,
-		}), &gorm.Config{})
+		}), &gorm.Config{
+			SkipDefaultTransaction: true,
+			PrepareStmt:            true,
+		})
+
+		if err != nil {
+			log.Panic(err)
+		}
+
+		Db = db
 	} else if dbConnection == "pgsql" {
 		// dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable"
 		dsn := fmt.Sprint("host=", dbHost, " user=", dbUsername, " password=", dbPassword, " dbname=", dbName, " port=", dbPort, " sslmode=disable")
 		db, err := gorm.Open(postgres.New(postgres.Config{
 			DSN: dsn,
-		}), &gorm.Config{})
-	}
+		}), &gorm.Config{
+			SkipDefaultTransaction: true,
+			PrepareStmt:            true,
+		})
 
-	if err != nil {
-		log.Panic(err)
-	}
+		if err != nil {
+			log.Panic(err)
+		}
 
-	Db = db
+		Db = db
+	}
 }

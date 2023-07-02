@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"log"
-	// _ "main/internal/pkg/database"
+	"main/internal/log"
 	_ "main/internal/main/routes"
 
 	// This controls the maxprocs environment variable in container runtimes.
