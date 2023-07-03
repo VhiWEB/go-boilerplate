@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"time"
@@ -15,6 +16,7 @@ import (
 )
 
 var Db *gorm.DB
+var SqlDb *sql.DB
 
 func loadEnvVars() {
 	err := godotenv.Load()
@@ -34,39 +36,57 @@ func init() {
 	dbUsername := os.Getenv("DB_USERNAME")
 	dbPassword := os.Getenv("DB_PASSWORD")
 
-	var err error
-
 	if dbConnection == "mysql" {
 		// dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True"
 		dsn := fmt.Sprint(dbUsername, ":", dbPassword, "@tcp(", dbHost, ":", dbPort, ")/", dbName, "?charset=utf8mb4&parseTime=True")
-		Db, err := gorm.Open(mysql.New(mysql.Config{
+		db, err := gorm.Open(mysql.New(mysql.Config{
 			DSN: dsn,
 		}), &gorm.Config{
 			SkipDefaultTransaction: true,
 			PrepareStmt:            true,
 		})
+
+		if err != nil {
+			log.Panic(err)
+		}
+
+		sqlDBObj, err := db.DB()
+
+		if err != nil {
+			log.Panic(err)
+		}
+
+		sqlDBObj.SetMaxIdleConns(10)
+		sqlDBObj.SetMaxOpenConns(1000)
+		sqlDBObj.SetConnMaxLifetime(time.Hour)
+
+		Db = db
+		SqlDb = sqlDBObj
 	} else if dbConnection == "pgsql" {
 		// dsn := "host=localhost user=gorm password=gorm dbname=gorm port=9920 sslmode=disable"
 		dsn := fmt.Sprint("host=", dbHost, " user=", dbUsername, " password=", dbPassword, " dbname=", dbName, " port=", dbPort, " sslmode=disable")
-		Db, err := gorm.Open(postgres.New(postgres.Config{
+		db, err := gorm.Open(postgres.New(postgres.Config{
 			DSN: dsn,
 		}), &gorm.Config{
 			SkipDefaultTransaction: true,
 			PrepareStmt:            true,
 		})
-	}
 
-	if err != nil {
-		log.Panic(err)
-	}
+		if err != nil {
+			log.Panic(err)
+		}
 
-	sqlDB, err := Db.DB()
+		sqlDBObj, err := db.DB()
 
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(1000)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+		if err != nil {
+			log.Panic(err)
+		}
 
-	if err != nil {
-		log.Panic(err)
+		sqlDBObj.SetMaxIdleConns(10)
+		sqlDBObj.SetMaxOpenConns(999)
+		sqlDBObj.SetConnMaxLifetime(time.Hour)
+
+		Db = db
+		SqlDb = sqlDBObj
 	}
 }
