@@ -7,10 +7,10 @@ ENV CGO_ENABLED=0
 ENV GOOS=linux
 ENV GOARCH=amd64
 WORKDIR /src
-COPY go.* ./
+COPY ./ ./
 RUN go mod download
 
-# build th application
+# build the application
 FROM base AS build
 RUN go build -ldflags="-w -s" -o /app/main ./internal/main/main.go
 
