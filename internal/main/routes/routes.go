@@ -16,7 +16,7 @@ func init() {
 	AuthRoutes(route)
 	UserRoutes(route)
 
-	route.Run("localhost:3000")
+	route.Run("localhost:80")
 }
 
 func MainRoutes(route *gin.Engine) {
