@@ -1,4 +1,4 @@
-package maincontrollers
+package maincontroller
 
 import (
 	"net/http"

@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"main/internal/main/controllers/maincontrollers"
-	"main/internal/main/controllers/usercontrollers"
+	"main/internal/main/controllers/maincontroller"
+	"main/internal/main/controllers/usercontroller"
 
 	"github.com/gin-gonic/gin"
 
@@ -20,19 +20,20 @@ func init() {
 }
 
 func MainRoutes(route *gin.Engine) {
-	route.GET("/", maincontrollers.GetServiceDetail)
+	route.GET("/", maincontroller.GetServiceDetail)
 }
 
 func AuthRoutes(route *gin.Engine) {
 	authV1 := route.Group("/api/v1")
 	{
-		authV1.POST("/auth", usercontrollers.Login)
+		authV1.POST("/register", usercontroller.Register)
+		authV1.POST("/auth", usercontroller.Login)
 	}
 }
 
 func UserRoutes(route *gin.Engine) {
 	userV1 := route.Group("/api/v1").Use(auth.UserAuthMiddleware())
 	{
-		userV1.GET("/me", usercontrollers.GetProfile)
+		userV1.GET("/me", usercontroller.GetProfile)
 	}
 }

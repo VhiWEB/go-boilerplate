@@ -1,4 +1,4 @@
-package usercontrollers
+package usercontroller
 
 import (
 	"net/http"
@@ -16,8 +16,9 @@ func GetAllUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": users})
 }
 
-func Login(c *gin.Context) {
+func Register(c *gin.Context) {
 	var requestBody struct {
+		Username string `json:"username" form:"username"`
 		Email    string `json:"email" form:"email"`
 		Password string `json:"password" form:"password"`
 	}
@@ -34,7 +35,38 @@ func Login(c *gin.Context) {
 	user.Email = requestBody.Email
 	user.Password = requestBody.Password
 
-	correct := user.Authenticate()
+	_, err := user.Create()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": &users.RegisterFailed{},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": gin.H{
+			"success": true,
+			"message": "Your account is successfully created!",
+		},
+	})
+}
+
+func Login(c *gin.Context) {
+	var requestBody struct {
+		Email    string `json:"email" form:"email"`
+		Password string `json:"password" form:"password"`
+	}
+
+	if err := c.Bind(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	correct, user, _ := users.Authenticate(requestBody.Email, requestBody.Password)
 	if !correct {
 		c.JSON(http.StatusNotFound, gin.H{
 			"success": false,
@@ -43,7 +75,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	token, err := jwt.GenerateToken(user.Email)
+	token, err := jwt.GenerateToken(user.ID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -55,6 +87,7 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"data": gin.H{
 			"access_token": token,
+			"user":         user,
 		},
 	})
 }

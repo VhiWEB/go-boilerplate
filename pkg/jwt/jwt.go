@@ -2,47 +2,57 @@ package jwt
 
 import (
 	"log"
+	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Secret key being used to sign tokens
 var (
-	secretKey = []byte("secret")
+	issKey    = os.Getenv("ISS_KEY")
+	secretKey = []byte(os.Getenv("JWT_SECRET"))
 )
 
 // Data we save in each token
 type Claims struct {
-	username string
-	jwt.StandardClaims
+	id uint
+	jwt.RegisteredClaims
 }
 
-// Generates a jwt token and assign a username to it's claims and return it
-func GenerateToken(username string) (string, error) {
+// Generate a JWT token and assign an ID to its claims and return it
+func GenerateToken(id uint) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
+
 	/* Create a map to store our claims */
 	claims := token.Claims.(jwt.MapClaims)
+
 	/* Set token claims */
-	claims["username"] = username
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+	claims["id"] = id
+	claims["iss"] = issKey
+	claims["iat"] = time.Now().Unix()
+	claims["exp"] = time.Now().Add(time.Hour * 24 * 30).Unix()
+
 	tokenString, err := token.SignedString(secretKey)
+
 	if err != nil {
 		log.Fatal("Error in generating key")
 		return "", err
 	}
+
 	return tokenString, nil
 }
 
-// Parses a jwt token and returns the username it it's claims
-func ParseToken(tokenStr string) (string, error) {
+// Parse a JWT token and returns the ID in its claims
+func ParseToken(tokenStr string) (float64, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
+
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		username := claims["username"].(string)
-		return username, nil
+		id := claims["id"].(float64)
+		return id, nil
 	} else {
-		return "", err
+		return 0, err
 	}
 }

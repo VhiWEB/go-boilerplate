@@ -2,9 +2,12 @@ package users
 
 import (
 	"log"
+	"time"
+
 	"main/internal/pkg/database"
 	"main/pkg/hash"
-	"time"
+
+	"gorm.io/gorm"
 )
 
 var db = database.Db
@@ -27,47 +30,53 @@ func Get() []User {
 	return users
 }
 
-func (user *User) Create() {
+func (user *User) Create() (bool, error) {
 	hashedPassword, err := hash.HashString(user.Password)
 
-	if err == nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	tx := db.Exec("INSERT INTO Users(Email,Password) VALUES(?,?)", user.Email, hashedPassword)
+	tx := db.Exec("INSERT INTO users(email,password) VALUES(?,?)", user.Email, hashedPassword)
 	// defer sqlDb.Close()
 
 	if tx == nil {
-		log.Fatal(tx)
-	}
-}
-
-func (user *User) Authenticate() bool {
-	tx := db.Raw("SELECT password FROM users WHERE email = ?", user.Email)
-
-	if tx == nil {
-		log.Fatal(tx)
+		log.Fatal(tx.Error)
+		return false, tx.Error
 	}
 
-	var hashedPassword string
-	tx.Scan(&hashedPassword)
-	// defer sqlDb.Close()
-
-	return hash.CheckStringHash(user.Password, hashedPassword)
+	return true, nil
 }
 
-// Check if a user exists in database by given email
-func GetUserByEmail(email string) (User, error) {
+func Authenticate(email string, password string) (bool, *User, *gorm.DB) {
 	tx := db.Raw("SELECT * FROM users WHERE email = ?", email)
 
-	if tx == nil {
-		log.Fatal(tx)
+	if tx.Error != nil {
+		log.Fatal(tx.Error)
+	}
+
+	var user *User
+	tx.Scan(&user)
+	// defer sqlDb.Close()
+
+	if hash.CheckStringHash(password, user.Password) {
+		return true, user, tx
+	}
+
+	return false, nil, tx
+}
+
+// Check if a user exists in database by given ID
+func GetById(id float64) (User, *gorm.DB) {
+	tx := db.Raw("SELECT * FROM users WHERE id = ?", id)
+
+	if tx.Error != nil {
+		log.Fatal(tx.Error)
 	}
 
 	var user User
 	tx.Scan(&user)
-	user.Email = email
 	// defer sqlDb.Close()
 
-	return user, nil
+	return user, tx
 }
